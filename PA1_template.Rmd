@@ -1,0 +1,131 @@
+---
+title: "PA1_template"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+summary
+```
+
+Loading & Preprocessing the data
+
+activity <- read.csv("activity.csv", colClasses = c("numeric", "character", "numeric")) head(activity)
+
+steps date interval 1 NA 2012-10-01 0 2 NA 2012-10-01 5 3 NA 2012-10-01 10 4 NA 2012-10-01 15 5 NA 2012-10-01 20 6 NA 2012-10-01 25
+
+names(activity)
+
+[1] "steps" "date" "interval"
+
+library(lattice)
+
+activity$date <- as.Date(activity$date, "%Y-%m-%d")
+
+What is the mean of total number of steps taken per day?
+
+using 2 approaches, First approach:
+
+StepsTotal <- aggregate(steps ~ data = akctivity, sum, na.rm = TRUE)
+
+histogram
+
+hist(StepsTotal$steps, main = "Total steps by day", xlab = "day", col = "red")
+
+mean and median
+
+mean(StepsTotal$steps)
+
+[1] 10766
+
+median(StepsTotal$steps)
+
+[1] 10765
+
+Second approach: creating a data frame w/weekdays and total steps by day
+
+steps <- rep(NA, 61) day <- rep("NA", 61) stepsday <- tapply(activity$steps, activity$date, sum, na.rm = T) length(stepsday)
+
+[1] 61
+
+for (i in 1:61) { steps[i] <- stepsday[[i]] day[i] <- names(stepsday) [i] }
+
+Then my data frame is:
+
+df <- data.frame(day, steps) head(df)
+
+     day steps
+1 2012-10-01 0 2 2012-10-02 126 3 2012-10-03 11352 4 2012-10-04 12116 5 2012-10-05 13294 6 2012-10-06 15420
+
+related histogram (little bit different, because of some missing data):
+
+hist(df$steps, main = "Total steps by day", xlab = "day", col = "green")
+
+What is the average daily activity pattern?
+
+mean of steps and time series plot
+
+time_series <- tapply(activity$steps, activity$internal, mean, na.rm = TRUE)
+
+related plot: mean of steps and time series
+
+plot(row.names(time_series), time_series, type = "l", xlab = "5-min interval", ylab = "Average across all Days", main = "Average number of steps taken", col = "red")
+
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+max_interval <- which.max(time_series) names(max_interval)
+
+[1] "835"
+
+IMPUTING MISSING VALUES
+
+activity_NA <- sum(is.na(activity)) activity_NA
+
+[1] 2304
+
+First NA replaced by 5-min-interval mean
+
+StepsAverage <- aggregate(steps ~ interval, data = activity, FUN = mean) fillNA <- numeric() for (i in 1:nrow(activity)) { obs <- activity[i, ] if (is.na(obs$steps)) { steps <- subset(StepsAverage, interval == obs$interval)$steps } else { steps <- obs$steps } fillNA <- c(fillNA, steps) }
+
+Creating a new data set equal to the original data set including the missing values
+
+new_activity <- activity new_activity$steps <- fillNA
+
+Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+StepsTotal2 <- aggregate(steps ~ date, data = new_activity, sum, na.rm = TRUE)
+
+related histogram:
+
+hist(StepsTotal2$steps, main = "Total steps by day", xlab = "day", col = "red")
+
+mean and median
+
+mean(StepsTotal2$steps)
+
+[1] 10766
+
+median(StepsTotal2$steps)
+
+[1] 10766
+
+the mean is the same, the median has changed a bit.
+
+Are there differences in activity patterns between weekdays and weekends?
+
+day <- weekdays(activity$date) daylevel <- vector() for (i in 1:nrow(activity)) { if (day[i] == "Saturday") { daylevel[i] <- "Weekend" } else if (day[i] == "Sunday") { daylevel[i] <- "Weekend" } else { daylevel[i] <- "Weekday" } } activity$daylevel <- daylevel activity$daylevel <- factor(activity$daylevel)
+
+stepsByDay <- aggregate(steps ~ interval + daylevel, data = activity, mean) names(stepsByDay) <- c("interval", "daylevel", "steps")
+
+related panel plot containing a time series plot (i.e. type = ???l???) of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)
+
+xyplot(steps ~ interval | daylevel, stepsByDay, type = "l", layout = c(1, 2), xlab = "Interval", ylab = "Number of steps")
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
